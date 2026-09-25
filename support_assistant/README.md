@@ -13,6 +13,7 @@ uvicorn support_assistant.main:app --reload
 The default mock mode is deterministic and does not call an LLM. Test it with:
 
 ```powershell
+python -m support_assistant.smoke_test
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/ask -ContentType "application/json" -Body '{"query":"How long does delivery take?"}'
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/ask -ContentType "application/json" -Body '{"query":"What is the capital of France?"}'
 ```
