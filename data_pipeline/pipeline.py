@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import re
 import sqlite3
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +21,8 @@ RATING_MAP = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
 CATEGORY_URLS = {
     "Travel": "https://books.toscrape.com/catalogue/category/books/travel_2/index.html",
     "Mystery": "https://books.toscrape.com/catalogue/category/books/mystery_3/index.html",
-    "Historical Fiction": "https://books.toscrape.com/catalogue/category/books/historical-fiction_20/index.html",
+    "Historical Fiction": "https://books.toscrape.com/catalogue/category/books/historical-fiction_4/index.html",
+    "Science Fiction": "https://books.toscrape.com/catalogue/category/books/science-fiction_16/index.html",
 }
 
 SQL_QUERIES = {
@@ -137,6 +139,8 @@ def run_queries(db_path: Path = DB_PATH) -> None:
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--skip-scrape", action="store_true", help="Reuse the existing database")
     args = parser.parse_args()

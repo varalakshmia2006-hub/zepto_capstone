@@ -10,3 +10,4 @@ data_pipeline/query_results.txt
 analytics/outputs/*
 support_assistant/chroma_db/
 support_assistant/__pycache__/
+*.log

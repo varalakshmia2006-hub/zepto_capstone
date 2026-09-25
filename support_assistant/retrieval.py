@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -46,7 +47,12 @@ def _fallback_embedding(text: str, dimensions: int = 384) -> list[float]:
 def embed_texts(texts: list[str]) -> list[list[float]]:
     try:
         from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer(MODEL_NAME)
+        try:
+            model = SentenceTransformer(MODEL_NAME, local_files_only=True)
+        except Exception:
+            if os.getenv("ALLOW_MODEL_DOWNLOAD") != "1":
+                raise
+            model = SentenceTransformer(MODEL_NAME)
         return model.encode(texts, normalize_embeddings=True).tolist()
     except Exception as error:
         print(f"SentenceTransformer unavailable ({error}); using deterministic local fallback embeddings.")
