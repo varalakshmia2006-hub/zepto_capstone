@@ -30,6 +30,8 @@ Ingestion is handled by `retrieval.load_documents`, which reads the eight exact 
 
 Only generation/classification branches on `MOCK_LLM`: unset or `MOCK_LLM=1` uses the keyword classifier, canned grounded answer, and fixed general answer with no LLM call. `MOCK_LLM=0` uses Groq for classification and structured answer generation, with up to two corrective retries when JSON validation fails. Embedding and Chroma retrieval run in both modes.
 
+The index uses cached `all-MiniLM-L6-v2` weights when available. To permit the first model download explicitly, set `ALLOW_MODEL_DOWNLOAD=1`; otherwise the default mock path uses deterministic local vectors and never waits on an embedding service.
+
 ## Docker
 
 ```powershell
