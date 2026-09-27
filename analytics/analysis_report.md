@@ -37,7 +37,9 @@ deck was dropped because its measured missingness is above 30%; imputing that mu
 
 age missingness (19.87%) was between 5% and 30%, so it was median-imputed.
 
-embarked missingness (0.22%) was below 5%, so affected rows were dropped.
+embarked missingness (0.22%) was below 5%, so rows missing that value were dropped.
+
+embark_town missingness (0.22%) was below 5%, so rows missing that value were dropped.
 
 Shape after cleaning: (889, 14)
 
@@ -65,24 +67,21 @@ fare IQR outlier count: 114
 Fare mean=32.10, median=14.45, mode=8.05; the distribution is right-skewed by mean/median/mode ordering.
 
 Survival rate by sex:
-sex
 female    0.740385
 male      0.188908
 
 Survival rate by pclass:
-pclass
 1    0.626168
 2    0.472826
 3    0.242363
 
 Survival rate by sex and pclass:
-sex     pclass
-female  1         0.967391
-        2         0.921053
-        3         0.500000
-male    1         0.368852
-        2         0.157407
-        3         0.135447
+female  1    0.967391
+        2    0.921053
+        3    0.500000
+male    1    0.368852
+        2    0.157407
+        3    0.135447
 
 Required six-column correlation matrix:
           survived    pclass       age     sibsp     parch      fare
@@ -95,13 +94,21 @@ fare      0.255290 -0.548193  0.093707  0.160887  0.217532  1.000000
 
 Two strongest absolute off-diagonal correlations: pclass-fare=-0.548; sibsp-parch=0.415
 
-Chart interpretation: The age histogram and box plot show the central passenger age and identify extreme ages using the IQR rule.
+Chart interpretation (age distribution and box plot): Most passenger ages cluster in adulthood, while the histogram shows the shape of the age distribution. The box plot marks the long-tail ages that meet the IQR outlier rule; age alone does not explain survival as strongly as sex or passenger class.
 
-Chart interpretation: The fare charts show a long upper tail; higher fares cluster with first-class travel and visibly different survival outcomes.
+Chart interpretation (fare distribution and box plot): Fare is strongly right-skewed, with a small number of passengers paying much more than the median. The box plot makes those high-fare outliers visible, so the mean is pulled upward relative to the median.
 
-Chart interpretation: Survival bars show a strong sex difference and a class gradient, with women and higher classes surviving at higher rates.
+Chart interpretation (survival by sex): The observed survival rate is substantially higher for women (about 74%) than men (about 19%). This large difference suggests sex is an important predictor in this dataset, though it should be interpreted alongside class and other features.
 
-Chart interpretation: The correlation heatmap and multivariate plots connect class, fare, age, and survival while making the strongest numeric associations visible.
+Chart interpretation (survival by passenger class): Survival declines from first to third class, with rates of about 63%, 47%, and 24%, respectively. This gradient is consistent with passenger class capturing differences in access or location during evacuation.
+
+Chart interpretation (sex and passenger class): Women have higher survival rates than men within each passenger class, while survival also falls across classes. The combined plot shows that the overall sex gap is not merely an artifact of class composition, although the difference is smallest among third-class women and men.
+
+Chart interpretation (correlation heatmap): Passenger class and fare have the strongest absolute correlation (r = -0.548), consistent with lower class number being associated with higher fares. Sibling/spouse count and parent/child count are next (r = 0.415), indicating family-related passenger counts tend to vary together; neither relationship alone establishes causation.
+
+Chart interpretation (fare, class, and survival): First-class passengers generally paid higher fares, and the fare distribution differs between survivors and non-survivors within class. This view supports the separate class and survival patterns, while also showing substantial overlap that a classifier must handle.
+
+Chart interpretation (age and fare by survival): Survivors and non-survivors overlap across age and fare, so neither variable creates a clean separation by itself. The plot adds context to the stronger sex and class patterns and cautions against relying on a single feature.
 
 Standardization check (mean/std):
          age    fare
@@ -163,7 +170,7 @@ Imbalance comparison:
              baseline     0.7833  0.6912 0.7344
 class_weight_balanced     0.7183  0.7500 0.7338
      SMOTE_train_only     0.7353  0.7353 0.7353
-The preferred imbalance strategy should be selected by the precision/recall trade-off; SMOTE is confined to the training fold by the imbalanced-learn pipeline.
+The highest F1 in this run is 0.735 for SMOTE_train_only (precision 0.735, recall 0.735). The balanced class-weight and training-only SMOTE variants increase recall relative to baseline, at the cost of some precision; choose between them based on the relative costs of missed survivors and false alarms. SMOTE is applied only inside the training pipeline.
 
 Random Forest GridSearchCV best parameters: {'max_depth': 4, 'max_features': 'sqrt', 'n_estimators': 150}; best CV score=0.7451; OOB score=0.8186.
 

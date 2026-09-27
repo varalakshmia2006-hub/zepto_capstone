@@ -55,10 +55,14 @@ def clean_data(frame: pd.DataFrame, report: list[str]) -> pd.DataFrame:
         cleaned["age"] = cleaned["age"].fillna(cleaned["age"].median())
         report.append(f"age missingness ({missing.get('age', 0):.2f}%) was between 5% and 30%, so it was median-imputed.")
     if "embarked" in cleaned:
-        cleaned = cleaned.dropna(subset=["embarked"])
-        report.append(f"embarked missingness ({missing.get('embarked', 0):.2f}%) was below 5%, so affected rows were dropped.")
+        low_missing_columns = [column for column in ["embarked", "embark_town"] if column in cleaned]
+        cleaned = cleaned.dropna(subset=low_missing_columns)
+        for column in low_missing_columns:
+            report.append(
+                f"{column} missingness ({missing.get(column, 0):.2f}%) was below 5%, "
+                "so rows missing that value were dropped."
+            )
     cleaned["fare"] = cleaned["fare"].fillna(cleaned["fare"].median())
-    cleaned["embark_town"] = cleaned["embark_town"].fillna("Unknown")
     return cleaned.reset_index(drop=True)
 
 
@@ -84,9 +88,21 @@ def save_eda(cleaned: pd.DataFrame, report: list[str]) -> None:
     sns.boxplot(x=cleaned["fare"], ax=axes[1, 1]); axes[1, 1].set_title("Fare outliers")
     fig.tight_layout(); fig.savefig(OUTPUTS / "01_age_fare_distributions.png", dpi=140); plt.close(fig)
 
-    by_sex = cleaned.groupby("sex")["survived"].mean()
-    by_class = cleaned.groupby("pclass")["survived"].mean()
-    by_both = cleaned.groupby(["sex", "pclass"])["survived"].mean()
+    by_sex = pd.Series({
+        sex: cleaned.loc[cleaned["sex"] == sex, "survived"].mean()
+        for sex in cleaned["sex"].dropna().unique()
+    }).sort_index()
+    by_class = pd.Series({
+        passenger_class: cleaned.loc[cleaned["pclass"] == passenger_class, "survived"].mean()
+        for passenger_class in sorted(cleaned["pclass"].dropna().unique())
+    })
+    by_both = pd.Series({
+        (sex, passenger_class): cleaned.loc[
+            (cleaned["sex"] == sex) & (cleaned["pclass"] == passenger_class), "survived"
+        ].mean()
+        for sex in sorted(cleaned["sex"].dropna().unique())
+        for passenger_class in sorted(cleaned["pclass"].dropna().unique())
+    })
     report.append("Survival rate by sex:\n" + by_sex.to_string())
     report.append("Survival rate by pclass:\n" + by_class.to_string())
     report.append("Survival rate by sex and pclass:\n" + by_both.to_string())
@@ -112,10 +128,14 @@ def save_eda(cleaned: pd.DataFrame, report: list[str]) -> None:
     sns.scatterplot(data=cleaned, x="age", y="fare", hue="survived", style="sex", alpha=0.65, ax=axes[1]); axes[1].set_title("Age, fare, and survival")
     fig.tight_layout(); fig.savefig(OUTPUTS / "04_multivariate_story.png", dpi=140); plt.close(fig)
     report.extend([
-        "Chart interpretation: The age histogram and box plot show the central passenger age and identify extreme ages using the IQR rule.",
-        "Chart interpretation: The fare charts show a long upper tail; higher fares cluster with first-class travel and visibly different survival outcomes.",
-        "Chart interpretation: Survival bars show a strong sex difference and a class gradient, with women and higher classes surviving at higher rates.",
-        "Chart interpretation: The correlation heatmap and multivariate plots connect class, fare, age, and survival while making the strongest numeric associations visible.",
+        "Chart interpretation (age distribution and box plot): Most passenger ages cluster in adulthood, while the histogram shows the shape of the age distribution. The box plot marks the long-tail ages that meet the IQR outlier rule; age alone does not explain survival as strongly as sex or passenger class.",
+        "Chart interpretation (fare distribution and box plot): Fare is strongly right-skewed, with a small number of passengers paying much more than the median. The box plot makes those high-fare outliers visible, so the mean is pulled upward relative to the median.",
+        "Chart interpretation (survival by sex): The observed survival rate is substantially higher for women (about 74%) than men (about 19%). This large difference suggests sex is an important predictor in this dataset, though it should be interpreted alongside class and other features.",
+        "Chart interpretation (survival by passenger class): Survival declines from first to third class, with rates of about 63%, 47%, and 24%, respectively. This gradient is consistent with passenger class capturing differences in access or location during evacuation.",
+        "Chart interpretation (sex and passenger class): Women have higher survival rates than men within each passenger class, while survival also falls across classes. The combined plot shows that the overall sex gap is not merely an artifact of class composition, although the difference is smallest among third-class women and men.",
+        "Chart interpretation (correlation heatmap): Passenger class and fare have the strongest absolute correlation (r = -0.548), consistent with lower class number being associated with higher fares. Sibling/spouse count and parent/child count are next (r = 0.415), indicating family-related passenger counts tend to vary together; neither relationship alone establishes causation.",
+        "Chart interpretation (fare, class, and survival): First-class passengers generally paid higher fares, and the fare distribution differs between survivors and non-survivors within class. This view supports the separate class and survival patterns, while also showing substantial overlap that a classifier must handle.",
+        "Chart interpretation (age and fare by survival): Survivors and non-survivors overlap across age and fare, so neither variable creates a clean separation by itself. The plot adds context to the stronger sex and class patterns and cautions against relying on a single feature.",
     ])
     standardized = cleaned[["age", "fare"]].copy()
     standardized[["age", "fare"]] = StandardScaler().fit_transform(standardized[["age", "fare"]])
@@ -182,7 +202,16 @@ def classification(cleaned: pd.DataFrame, report: list[str]) -> None:
         prediction = pipeline.predict(X_test)
         imbalance_rows.append({"variant": name, "precision": precision_score(y_test, prediction), "recall": recall_score(y_test, prediction), "f1": f1_score(y_test, prediction)})
     imbalance = pd.DataFrame(imbalance_rows); imbalance.to_csv(OUTPUTS / "imbalance_comparison.csv", index=False)
-    report.append(f"Class balance: {y.value_counts(normalize=True).round(3).to_dict()}\nImbalance comparison:\n{imbalance.round(4).to_string(index=False)}\nThe preferred imbalance strategy should be selected by the precision/recall trade-off; SMOTE is confined to the training fold by the imbalanced-learn pipeline.")
+    preferred = imbalance.sort_values("f1", ascending=False).iloc[0]
+    report.append(
+        f"Class balance: {y.value_counts(normalize=True).round(3).to_dict()}\n"
+        f"Imbalance comparison:\n{imbalance.round(4).to_string(index=False)}\n"
+        f"The highest F1 in this run is {preferred['f1']:.3f} for {preferred['variant']} "
+        f"(precision {preferred['precision']:.3f}, recall {preferred['recall']:.3f}). "
+        "The balanced class-weight and training-only SMOTE variants increase recall relative to baseline, "
+        "at the cost of some precision; choose between them based on the relative costs of missed survivors "
+        "and false alarms. SMOTE is applied only inside the training pipeline."
+    )
 
     search = GridSearchCV(RandomForestClassifier(oob_score=True, bootstrap=True, random_state=RANDOM_STATE), {"n_estimators": [100, 150], "max_depth": [4, 7], "max_features": ["sqrt", "log2"]}, cv=3, scoring="f1", n_jobs=-1)
     tuned = Pipeline([("preprocess", make_preprocessor(numeric, categorical)), ("model", search)])

@@ -1,0 +1,144 @@
+
+--- select_where ---
+SELECT title, price_gbp, price_inr FROM books WHERE in_stock = 1 LIMIT 10;
+                                                                                            title  price_gbp  price_inr
+                                                                          It's Only the Himalayas      45.17    4765.44
+                               Full Moon over Noahâs Ark: An Odyssey to Mount Ararat and Beyond      49.43    5214.86
+                               See America: A Celebration of Our National Parks & Treasured Sites      48.87    5155.78
+                              Vagabonding: An Uncommon Guide to the Art of Long-Term World Travel      36.94    3897.17
+                                                                             Under the Tuscan Sun      37.33    3938.31
+                                                                               A Summer In Europe      44.34    4677.87
+                                                                         The Great Railway Bazaar      30.54    3221.97
+                                                                 A Year in Provence (Provence #1)      56.88    6000.84
+The Road to Little Dribbling: Adventures of an American in Britain (Notes From a Small Island #2)      23.21    2448.66
+                                                        Neither Here nor There: Travels in Europe      38.95    4109.23
+
+--- order_by_limit ---
+SELECT title, price_gbp FROM books ORDER BY price_inr DESC LIMIT 10;
+                                                                   title  price_gbp
+                                           Boar Island (Anna Pigeon #19)      59.48
+                                        A Year in Provence (Provence #1)      56.88
+                                                     The Past Never Ends      56.50
+                                        The Last Painting of Sara de Vos      55.55
+                                 A Flight of Arrows (The Pathfinders #2)      55.53
+                                                          Dune (Dune #1)      54.86
+                   Murder at the 42nd Street Library (Raymond Ambler #1)      54.36
+                                          The Last Mile (Amos Decker #2)      54.21
+                                                      Tipping the Velvet      53.74
+The Bachelor Girl's Guide to Murder (Herringford and Watts Mysteries #1)      52.30
+
+--- distinct_categories ---
+SELECT DISTINCT category_name FROM categories ORDER BY category_name;
+     category_name
+Historical Fiction
+           Mystery
+   Science Fiction
+            Travel
+
+--- between_prices ---
+SELECT title, price_gbp FROM books WHERE price_gbp BETWEEN 20 AND 40 ORDER BY price_gbp;
+                                                                                            title  price_gbp
+                                                                             Love, Lies and Spies      20.55
+                                                 Delivering the Truth (Quaker Midwife Mystery #1)      20.89
+                                                                           Voyager (Outlander #3)      21.07
+                                                                                            Arena      21.36
+The Road to Little Dribbling: Adventures of an American in Britain (Notes From a Small Island #2)      23.21
+                                What Happened on Beale Street (Secrets of the South Mysteries #2)      25.37
+                                                               1,000 Places to See Before You Die      26.08
+                                                                                  Soft Apocalypse      26.12
+                                                                        Girl With a Pearl Earring      26.77
+                                                                 Poisonous (Max Revere Novels #3)      26.80
+                                                                                        The Widow      27.26
+                                                                        The Marriage of Opposites      28.08
+                                                                            The Passion of Dolssa      28.32
+                        Forever and Forever: The Courtship of Henry Longfellow and Fanny Appleton      29.69
+                                                                                     Mrs. Houdini      30.25
+                                                                         The Great Railway Bazaar      30.54
+                                                   Foundation (Foundation (Publication Order) #1)      32.42
+                                                  World Without End (The Pillars of the Earth #2)      32.97
+                          Life, the Universe and Everything (Hitchhiker's Guide to the Galaxy #3)      33.26
+                                         Having the Barbarian's Baby (Ice Planet Barbarians #7.5)      34.96
+                                                                                      Most Wanted      35.28
+                                                                                     The Red Tent      35.66
+                                                                                             Join      35.67
+                                                          The Last Girl (The Dominion Trilogy #1)      36.26
+                              Vagabonding: An Uncommon Guide to the Art of Long-Term World Travel      36.94
+                                                                            The House by the Lake      36.95
+                                                                             Under the Tuscan Sun      37.33
+                                                                           The Invention of Wings      37.34
+                                            Mesaerion: The Best Science Fiction Stories 1800-1849      37.59
+                                                        Neither Here nor There: Travels in Europe      38.95
+                                                                                A Paris Apartment      39.01
+
+--- in_ratings ---
+SELECT title, rating FROM books WHERE rating IN (4, 5) ORDER BY rating DESC, title LIMIT 10;
+                                                                   title  rating
+                                      1,000 Places to See Before You Die       5
+                                 A Flight of Arrows (The Pathfinders #2)       5
+                                  A Time of Torment (Charlie Parker #14)       5
+                                                                    Join       5
+                                                            Mrs. Houdini       5
+The Bachelor Girl's Guide to Murder (Herringford and Watts Mysteries #1)       5
+                                                   The Passion of Dolssa       5
+                                                            The Red Tent       5
+                                                  Voyager (Outlander #3)       5
+       What Happened on Beale Street (Secrets of the South Mysteries #2)       5
+
+--- join_top_rated ---
+SELECT c.category_name, b.title, b.rating, b.price_inr
+        FROM books AS b JOIN categories AS c ON b.category_id = c.category_id
+        WHERE b.rating >= 4 ORDER BY c.category_name, b.rating DESC, b.title LIMIT 15;
+     category_name                                                                    title  rating  price_inr
+Historical Fiction                                  A Flight of Arrows (The Pathfinders #2)       5    5858.42
+Historical Fiction                                                             Mrs. Houdini       5    3191.38
+Historical Fiction                                                    The Passion of Dolssa       5    2987.76
+Historical Fiction                                                             The Red Tent       5    3762.13
+Historical Fiction                                                   Voyager (Outlander #3)       5    2222.89
+Historical Fiction                                                        A Paris Apartment       4    4115.55
+Historical Fiction                                                The Marriage of Opposites       4    2962.44
+Historical Fiction                          World Without End (The Pillars of the Earth #2)       4    3478.34
+           Mystery                                   A Time of Torment (Charlie Parker #14)       5    5100.92
+           Mystery The Bachelor Girl's Guide to Murder (Herringford and Watts Mysteries #1)       5    5517.65
+           Mystery        What Happened on Beale Street (Secrets of the South Mysteries #2)       5    2676.54
+           Mystery                         Delivering the Truth (Quaker Midwife Mystery #1)       4    2203.90
+           Mystery                    Murder at the 42nd Street Library (Raymond Ambler #1)       4    5734.98
+           Mystery                                                            Sharp Objects       4    5045.01
+           Mystery                          The Murder of Roger Ackroyd (Hercule Poirot #4)       4    4652.55
+
+--- pandas.read_sql join ---
+     category_name                                                                    title  rating  price_inr
+Historical Fiction                                  A Flight of Arrows (The Pathfinders #2)       5    5858.42
+Historical Fiction                                                             Mrs. Houdini       5    3191.38
+Historical Fiction                                                    The Passion of Dolssa       5    2987.76
+Historical Fiction                                                             The Red Tent       5    3762.13
+Historical Fiction                                                   Voyager (Outlander #3)       5    2222.89
+Historical Fiction                                                        A Paris Apartment       4    4115.55
+Historical Fiction                                                The Marriage of Opposites       4    2962.44
+Historical Fiction                          World Without End (The Pillars of the Earth #2)       4    3478.34
+           Mystery                                   A Time of Torment (Charlie Parker #14)       5    5100.92
+           Mystery The Bachelor Girl's Guide to Murder (Herringford and Watts Mysteries #1)       5    5517.65
+           Mystery        What Happened on Beale Street (Secrets of the South Mysteries #2)       5    2676.54
+           Mystery                         Delivering the Truth (Quaker Midwife Mystery #1)       4    2203.90
+           Mystery                    Murder at the 42nd Street Library (Raymond Ambler #1)       4    5734.98
+           Mystery                                                            Sharp Objects       4    5045.01
+           Mystery                          The Murder of Roger Ackroyd (Hercule Poirot #4)       4    4652.55
+
+--- pandas.merge equivalent ---
+     category_name                                                                    title  rating  price_inr
+Historical Fiction                                  A Flight of Arrows (The Pathfinders #2)       5    5858.42
+Historical Fiction                                                             Mrs. Houdini       5    3191.38
+Historical Fiction                                                    The Passion of Dolssa       5    2987.76
+Historical Fiction                                                             The Red Tent       5    3762.13
+Historical Fiction                                                   Voyager (Outlander #3)       5    2222.89
+Historical Fiction                                                        A Paris Apartment       4    4115.55
+Historical Fiction                                                The Marriage of Opposites       4    2962.44
+Historical Fiction                          World Without End (The Pillars of the Earth #2)       4    3478.34
+           Mystery                                   A Time of Torment (Charlie Parker #14)       5    5100.92
+           Mystery The Bachelor Girl's Guide to Murder (Herringford and Watts Mysteries #1)       5    5517.65
+           Mystery        What Happened on Beale Street (Secrets of the South Mysteries #2)       5    2676.54
+           Mystery                         Delivering the Truth (Quaker Midwife Mystery #1)       4    2203.90
+           Mystery                    Murder at the 42nd Street Library (Raymond Ambler #1)       4    5734.98
+           Mystery                                                            Sharp Objects       4    5045.01
+           Mystery                          The Murder of Roger Ackroyd (Hercule Poirot #4)       4    4652.55
+
+JOIN outputs equivalent: True

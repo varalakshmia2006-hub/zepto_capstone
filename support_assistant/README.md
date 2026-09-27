@@ -18,10 +18,10 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/ask -ContentType "appl
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/ask -ContentType "application/json" -Body '{"query":"What is the capital of France?"}'
 ```
 
-Expected mock responses have this shape:
+Mock-mode example responses (`POST /ask`):
 
 ```json
-{"answer":"Based on the retrieved context: Zepto delivers grocery and household essentials...","sources":["doc_01_delivery_policy"],"confidence":1.0}
+{"answer":"Based on the retrieved context: Zepto delivers grocery and household essentials to serviceable pin codes within 10 to 30 minutes of order confirmation, depending on the customer's delivery zone and current order volume. Standard del","sources":["doc_01_delivery_policy","doc_02_returns_refunds","doc_04_order_tracking"],"confidence":1.0}
 {"answer":"I can only answer questions about Zepto policies right now.","sources":[],"confidence":1.0}
 ```
 
@@ -34,6 +34,8 @@ Only generation/classification branches on `MOCK_LLM`: unset or `MOCK_LLM=1` use
 The index uses cached `all-MiniLM-L6-v2` weights when available. To permit the first model download explicitly, set `ALLOW_MODEL_DOWNLOAD=1`; otherwise the default mock path uses deterministic local vectors and never waits on an embedding service.
 
 ## Docker
+
+The image build downloads the public `all-MiniLM-L6-v2` model and creates a fresh `zepto_policy` ChromaDB index from the eight documents. The built container therefore has its embedding model and policy index available locally at startup; the build requires network access to fetch the model.
 
 ```powershell
 docker build -f support_assistant/Dockerfile -t zepto-support .
