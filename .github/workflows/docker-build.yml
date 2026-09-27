@@ -26,4 +26,24 @@ jobs:
           context: .
           file: support_assistant/Dockerfile
           push: false
+          load: true
           tags: zepto-support:latest
+
+      - name: Smoke test container endpoints
+        run: |
+          set -euo pipefail
+          docker run -d --name zepto-support-test -p 7860:7860 zepto-support:latest
+          trap 'docker rm -f zepto-support-test >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:7860/openapi.json >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:7860/openapi.json >/dev/null
+          curl --fail --silent -H 'Content-Type: application/json' \
+            -d '{"query":"How long does delivery take?"}' \
+            http://127.0.0.1:7860/ask | python -c 'import json,sys; r=json.load(sys.stdin); assert r["answer"].startswith("Based on the retrieved context:"); assert "doc_01_delivery_policy" in r["sources"]; assert r["confidence"] == 1.0'
+          curl --fail --silent -H 'Content-Type: application/json' \
+            -d '{"query":"What is the capital of France?"}' \
+            http://127.0.0.1:7860/ask | python -c 'import json,sys; r=json.load(sys.stdin); assert r["answer"] == "I can only answer questions about Zepto policies right now."; assert r["sources"] == []; assert r["confidence"] == 1.0'
